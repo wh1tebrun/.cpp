@@ -5,13 +5,11 @@
 #include "./Snake.h"
 #include <ncurses.h>
 
-// Global variables
-int row;
-int col;
+int gameHeight, gameWidth;
+int currentWidth, currentHeight;
 char currentDirection;
-int pixelPosition[2] = {0, 0}; // Array of two integers: [x, y]
 
-/* Initialize the terminal and playing field dimensions using ncurses */
+// Initialize terminal settings to prepare for ncurses-based display
 void initTerminal() {
   initscr();
   curs_set(false);
@@ -19,114 +17,108 @@ void initTerminal() {
   nodelay(stdscr, true);
   keypad(stdscr, true);
   start_color();
+}
+
+// Set up initial game environment and attributes
+void initGame() {
   init_pair(1, COLOR_BLUE, COLOR_BLACK);
   init_pair(2, COLOR_RED, COLOR_BLACK);
+
+  getmaxyx(stdscr, gameHeight, gameWidth);
+
+  currentWidth = gameWidth / 2;
+  currentHeight = gameHeight / 2;
+  currentDirection = 'E';
 }
 
-/* Initialize the game: set initial pixel position and direction */
-void initGame() {
-  pixelPosition = {screenWidth / 2, screenHeight / 2};
-  currentDirection = KEY_UP;
-}
+// Terminate ncurses environment properly
+void endNcurses() { endwin(); }
 
-/* Draw a pixel at the specified position with the given color */
+// Function to draw a pixel (a square block in this context) on the screen
 void drawPixel(int row, int column, int color) {
-  attron(COLOR_PAIR(color));
-  mvprintw(row, 2 * column, "  "); // Each pixel is two characters wide
-  attroff(COLOR_PAIR(color));
+  attron(color | A_REVERSE);
+  mvprintw(row, column, "  ");
+  attroff(color | A_REVERSE);
   refresh();
 }
 
-/* Draw the playing field border with the specified color using drawPixel */
+// ____________________________________________________________________________
+void drawBox(int color, int score, float speed) {
+  attron(color);
+  mvprintw(5, 5, "Score: %3d", score);
+  mvprintw(5, 100, "Speed %3f", speed);
+  attroff(color);
+  refresh();
+}
+
+// Draw borders along the edges of the terminal window
 void drawBorder(int color) {
-  for (int col = 0; col < screenWidth / 2; ++col) {
-    drawPixel(0, col, color);                // Top border
-    drawPixel(screenHeight - 1, col, color); // Bottom border
+  getmaxyx(stdscr, gameHeight, gameWidth);
+  for (int col = 0; col < gameWidth; col += 2) {
+    drawPixel(0, col, color);
+    drawPixel(gameHeight - 1, col, color);
   }
-
-  for (int row = 0; row < screenHeight; ++row) {
-    drawPixel(row, 0, color); // Left border
-    drawPixel(row, screenWidth / 2 - 1,
-              color); // Right border (for even number of columns)
-  }
-}
-
-/* Draw the snake at its current position and in the specified color */
-void drawSnake(int color) {
-  for (const auto &position : snakePositions) {
-    int row = position.first;
-    int col = position.second;
-    drawPixel(row, col, color);
+  for (int row = 0; row < gameHeight; row++) {
+    drawPixel(row, 0, color);
+    drawPixel(row, gameWidth - 2, color);
   }
 }
+// Draw the snake at its current position
+void drawSnake(int color) { drawPixel(currentHeight, currentWidth, color); }
 
-/* Check if the snake collides with the border */
+// Check if the snake collides with the border of the game field
 bool collidesWithBorder() {
-  for (const auto &position : snakePositions) {
-    int row = position.first;
-    int column = position.second;
-
-    if (row < 1 || row >= screenHeight - 1 || column < 1 ||
-        column >= screenWidth / 2 - 1) {
-      return true; // A segment is outside of the allowed boundaries
-    }
-  }
-  return false; // No collisions with the border
+  return currentWidth <= 0 || currentWidth >= gameWidth - 2 ||
+         currentHeight <= 0 || currentHeight >= gameHeight - 1;
 }
 
-/* Move the snake in the current direction by exactly one pixel */
+// Update the snake's position based on the current movement direction
 void moveSnake() {
   switch (currentDirection) {
-  case KEY_LEFT:
-    col--;
+  case 'W':
+    currentWidth = currentWidth - 2;
     break;
-  case KEY_RIGHT:
-    col++;
+  case 'E':
+    currentWidth = currentWidth + 2;
     break;
-  case KEY_UP:
-    row--;
+  case 'N':
+    currentHeight--;
     break;
-  case KEY_DOWN:
-    row++;
+  case 'S':
+    currentHeight++;
     break;
-  }
-
-  snakePositions.insert(snakePositions.begin(), std::make_pair(newRow, newCol));
-  if (!isGrowing) {
-    snakePositions.pop_back();
   }
 }
 
-bool isGrowing =
-    false; // State variable indicating whether the snake is growing
-
-/* Process the given keycode */
+// Handle user input and control game flow
 bool handleKey(int key) {
   switch (key) {
-  case KEY_UP:
-    if (currentDirection != KEY_DOWN) {
-      currentDirection = KEY_UP; // Change direction to up (avoid reverse)
-    }
-    break;
-  case KEY_DOWN:
-    if (currentDirection != KEY_UP) {
-      currentDirection = KEY_DOWN; // Change direction to down (avoid reverse)
-    }
-    break;
   case KEY_LEFT:
-    if (currentDirection != KEY_RIGHT) {
-      currentDirection = KEY_LEFT; // Change direction to left (avoid reverse)
+    if (currentDirection != 'E') {
+      currentDirection = 'W';
+      return false;
     }
     break;
   case KEY_RIGHT:
-    if (currentDirection != KEY_LEFT) {
-      currentDirection = KEY_RIGHT; // Change direction to right (avoid reverse)
+    if (currentDirection != 'W') {
+      currentDirection = 'E';
+      return false;
     }
     break;
-  case 27:       // ASCII code for ESC
-    return true; // End game
-  default:
-    return false; // No effect for other keys
+  case KEY_UP:
+    if (currentDirection != 'S') {
+      currentDirection = 'N';
+      return false;
+    }
+    break;
+  case KEY_DOWN:
+    if (currentDirection != 'N') {
+      currentDirection = 'S';
+      return false;
+    }
+    break;
+  case 27:
+    return true;
   }
-  return false; // Continue the game after processing a valid direction key
+  return false;
 }

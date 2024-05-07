@@ -1,42 +1,40 @@
 // Copyright 2024, University of Freiburg,
 // 2nd Semester Computer Science Student
-// Author: Ege Tekin <et130@students.uni-freiburg.de>
+// Author: Hannah Bast <et130@students.uni-freiburg.de>
+// Comment lines were written by gpt-4-turbo
 
-#pragma once
+#pragma once  // Ensures that the header file is included only once during compilation
 
-// Position and direction of the box.
-extern int row;
-extern int col;
-extern char currentDirection;
+// Declaring external variables to represent the position and size of the game:
+extern int currentHeight;  // Current vertical position of the snake or box
+extern int currentWidth;   // Current horizontal position of the snake or box
+extern int gameWidth;      // Width of the game area (typically the terminal width)
+extern int gameHeight;     // Height of the game area (typically the terminal height)
+extern char currentDirection;  // Current direction of the snake or box
 
-/* Pixel's initial position (x, y) using an array of two integers. */
-extern int pixelPosition[2];
+// Function declarations to organize game initialization and rendering:
+void initTerminal();  // Initializes the terminal for gameplay (may involve setting up ncurses environment)
+void initGame();      // Sets initial conditions for the game (e.g., reset positions and direction)
 
-/* Function to initialize the Ncurses terminal. */
-void initTerminal();
+// Function to clean up and terminate the ncurses environment properly
+void endNcurses();    
 
-/* Function to initialize game settings like initial pixel position and
-direction. */
-void initGame();
+// Function to draw the snake in the game window with a given color
+void drawSnake(int color);  
 
-/* Function to draw a pixel at a specified position with a specified color. Each
-pixel is rendered two characters wide. */
-void drawPixel(int row, int column, int color);
+// Draws a "pixel" (a character block) at the specified position with a specified color
+void drawPixel(int row, int col, int color); 
 
-/* Function to draw the borders of the playing field using drawPixel. */
-void drawBorder(int color);
+// Draws the border around the game area to delineate edges
+void drawBorder(int color);  
 
-/* Function to draw the snake at its current position in the given color. */
-void drawSnake(int color);
+// Takes input key and modifies game state based on user input
+bool handleKey(int key); 
 
-/* Function to check if the snake collides with the boundary of the playing
-field. */
-bool collidesWithBorder();
+// Moves the snake based on its current direction
+void moveSnake();  
 
-/* Function to move the snake in the current direction by exactly one pixel
-position. */
-void moveSnake();
+// Checks whether the snake collides with any of the borders of the game area
+bool collidesWithBorder();  
 
-/* Function to handle keyboard input; updates direction unless attempting to
-reverse, and returns true on ESC key press to signal game end. */
-bool handleKey(int key);
+void drawBox(int color, int score, float speed);
