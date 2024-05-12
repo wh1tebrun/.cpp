@@ -1,33 +1,37 @@
 .SUFFIXES:
 .PHONY: all compile checkstyle test clean format
+.PRECIOUS: %.o
 
-all: clean compile test checkstyle
+CXX = clang++-14
+BASENAME = Snake
+LIBS = -lncurses
+TESTLIBS = -lgtest -lgtest_main -lpthread
 
-compile: SnakeMain SnakeTest
+all: compile format checkstyle test
 
-Snake.o: Snake.cpp Snake.h
-	clang++ -c Snake.cpp
-
-SnakeMain.o: SnakeMain.cpp Snake.h
-	clang++ -c SnakeMain.cpp
-
-SnakeTest.o: SnakeTest.cpp Snake.h
-	clang++ -c SnakeTest.cpp
-
-SnakeMain: Snake.o SnakeMain.o
-	clang++ -o SnakeMain SnakeMain.o Snake.o -lncurses
-
-SnakeTest: Snake.o SnakeTest.o
-	clang++ -o SnakeTest SnakeTest.o Snake.o -lncurses -lgtest -lgtest_main
-
-test: SnakeTest
-	./SnakeTest
+compile: $(BASENAME)Main 
 
 checkstyle:
-	clang-format-14 *.cpp --dry-run -Werror
-
-clean:
-	rm -f ./SnakeMain ./SnakeTest *.o
+    clang-format-14 --dry-run -Werror *.h *.cpp
 
 format:
-	clang-format-14 -i *.cpp
+    clang-format-14 -i *.h *.cpp
+
+
+test: $(BASENAME)Test
+    ./$<
+
+%.o: %.cpp *.h
+    $(CXX) -c $<
+
+%Main: %Main.o %.o
+    $(CXX) -o $@ $^ $(LIBS)
+
+%Test: %Test.o %.o
+    $(CXX) -o $@ $^ $(LIBS) $(TESTLIBS)
+
+
+clean:
+    rm -f *Main
+    rm -f *Test
+    rm -f *.o
